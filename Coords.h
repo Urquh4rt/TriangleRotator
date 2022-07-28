@@ -1,57 +1,67 @@
 #pragma once
 
-#include <cmath>
 #include <vector>
-#include <cassert>
 using namespace std;
 
 bool isUpsideDown(int x, int y);
 
 int f2i(float x);
 
-struct RealCoords {
+struct RealCoordinates {
 	float x;
 	float y;
 
-	RealCoords operator+ (const RealCoords& real) const {
-		return RealCoords{ x + real.x, y + real.y };
+	RealCoordinates operator+ (const RealCoordinates& real) const {
+		return RealCoordinates{ x + real.x, y + real.y };
 	}
 
-	RealCoords operator* (float c) const {
-		return RealCoords{ c * x, c * y };
+	RealCoordinates operator- (const RealCoordinates& real) const {
+		return RealCoordinates{ x - real.x, y - real.y };
 	}
 
-	RealCoords operator/ (float c) const {
-		return RealCoords{ x / c, y / c };
+	RealCoordinates operator* (float c) const {
+		return RealCoordinates{ c * x, c * y };
+	}
+
+	RealCoordinates operator/ (float c) const {
+		return RealCoordinates{ x / c, y / c };
 	}
 };
 
-struct CarthesianCoords {
+struct BarycentricCoordinates {
 	float x;
 	float y;
 };
 
-struct LogicalCoords {
+struct LogicalCoordinates {
 	int x;
 	int y;
 
-	bool operator== (const LogicalCoords& p) { return p.x == this->x && p.y == this->y; }
+	bool operator== (const LogicalCoordinates& p) { return p.x == this->x && p.y == this->y; }
 };
 
-bool isUpsideDown(LogicalCoords logi);
+bool isUpsideDown(LogicalCoordinates logi);
 
-RealCoords RC(const CarthesianCoords& cart);
+RealCoordinates RC(const BarycentricCoordinates& bary);
 
-CarthesianCoords CR(const RealCoords& real);
+BarycentricCoordinates CR(const RealCoordinates& real);
 
-CarthesianCoords CL(const LogicalCoords& logi);
+BarycentricCoordinates CL(const LogicalCoordinates& logi);
 
 // maps a point within a triangle to the root corner of the triangle (bottom left or top right, depending on the orientation of the triangle)
-LogicalCoords LC(const CarthesianCoords& cart);
+LogicalCoordinates LC(const BarycentricCoordinates& bary);
 
-RealCoords RL(const LogicalCoords& logi);
+RealCoordinates RL(const LogicalCoordinates& logi);
 
-vector<RealCoords> getTriangleCorners(const LogicalCoords& logi);
+LogicalCoordinates LR(const RealCoordinates& real);
+
+vector<RealCoordinates> getTriangleCorners(const LogicalCoordinates& logi);
+
+RealCoordinates getCenter(vector<RealCoordinates> reals);
+
+RealCoordinates rotate(const RealCoordinates& real, const RealCoordinates& pivot, float angle);
+
+LogicalCoordinates rotate(const LogicalCoordinates& logi, const LogicalCoordinates& pivot, int angle);
 
 struct TriangleBoard {
 	vector<vector<int>> board;

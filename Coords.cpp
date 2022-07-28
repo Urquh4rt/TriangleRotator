@@ -1,7 +1,10 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <cassert>
 #include "Coords.h"
 
 bool isUpsideDown(int x, int y) {
-	return (x + 1000000) % 2 == 0;
+	return (x + y + 1000000) % 2 == 0;
 }
 
 int f2i(float x) {
@@ -11,70 +14,92 @@ int f2i(float x) {
 		return static_cast<int>(x - 0.5f);
 }
 
-bool isUpsideDown(LogicalCoords logi) {
+bool isUpsideDown(LogicalCoordinates logi) {
 	return isUpsideDown(logi.x, logi.y);
 }
 
-RealCoords RC(const CarthesianCoords& cart) {
-	RealCoords real;
-	real.x = cart.x + 0.5f * cart.y;
-	real.y = sqrt(3.f) * cart.y / 2.f;
+RealCoordinates RC(const BarycentricCoordinates& bary) {
+	RealCoordinates real;
+	real.x = bary.x + 0.5f * bary.y;
+	real.y = sqrt(3.f) * bary.y / 2.f;
 	return real;
 }
 
-CarthesianCoords CR(const RealCoords& real) {
-	CarthesianCoords cart;
-	cart.x = real.x - real.y / sqrt(3.f);
-	cart.y = 2.f * real.y / sqrt(3.f);
-	return cart;
+BarycentricCoordinates CR(const RealCoordinates& real) {
+	BarycentricCoordinates bary;
+	bary.x = real.x - real.y / sqrt(3.f);
+	bary.y = 2.f * real.y / sqrt(3.f);
+	return bary;
 }
 
-CarthesianCoords CL(const LogicalCoords& logi) {
+BarycentricCoordinates CL(const LogicalCoordinates& logi) {
 	if (isUpsideDown(logi)) {
-		return CarthesianCoords{ float(logi.x / 2 + 1 - logi.y), float(logi.y + 1) };
+		return BarycentricCoordinates{ float((logi.x + logi.y) / 2 + 1 - logi.y), float(logi.y + 1) };
 	}
 	else {
-		return CarthesianCoords{ float((logi.x - 1) / 2 + 1 - logi.y), float(logi.y) };
+		return BarycentricCoordinates{ float((logi.x + logi.y - 1) / 2 + 1 - logi.y), float(logi.y) };
 	}
 }
 
 // maps a point within a triangle to the root corner of the triangle (bottom left or top right, depending on the orientation of the triangle)
-LogicalCoords LC(const CarthesianCoords& cart) {
-	LogicalCoords logi;
-	CarthesianCoords root{ floor(cart.x), floor(cart.y) };
-	if (cart.x + cart.y > root.x + root.y + 1.f) { // upside down
-		root.x = ceil(cart.x);
-		root.y = ceil(cart.y);
+LogicalCoordinates LC(const BarycentricCoordinates& bary) {
+	LogicalCoordinates logi;
+	BarycentricCoordinates root{ floor(bary.x), floor(bary.y) };
+	if (bary.x + bary.y > root.x + root.y + 1.f) { // upside down
+		root.x = ceil(bary.x);
+		root.y = ceil(bary.y);
 		logi.y = f2i(root.y - 1);
-		logi.x = 2 * (f2i(root.x) - 1 + logi.y);
+		logi.x = 2 * (f2i(root.x) - 1 + logi.y) - logi.y;
 	}
 	else { // right side up
 		logi.y = f2i(root.y);
-		logi.x = 2 * (f2i(root.x) - 1 + logi.y) + 1;
+		logi.x = 2 * (f2i(root.x) - 1 + logi.y) + 1 - logi.y;
 	}
 	return logi;
 }
 
-RealCoords RL(const LogicalCoords& logi) {
+RealCoordinates RL(const LogicalCoordinates& logi) {
 	return RC(CL(logi));
 }
 
-vector<RealCoords> getTriangleCorners(const LogicalCoords& logi) {
-	auto cart = CL(logi);
+LogicalCoordinates LR(const RealCoordinates& real) {
+	return LC(CR(real));
+}
+
+vector<RealCoordinates> getTriangleCorners(const LogicalCoordinates& logi) {
+	auto bary = CL(logi);
 	if (isUpsideDown(logi)) {
 		return
 		{
-			RC(CarthesianCoords{ cart.x, cart.y }),
-			RC(CarthesianCoords{ cart.x - 1, cart.y }),
-			RC(CarthesianCoords{ cart.x, cart.y - 1 }),
+			RC(BarycentricCoordinates{ bary.x, bary.y }),
+			RC(BarycentricCoordinates{ bary.x - 1, bary.y }),
+			RC(BarycentricCoordinates{ bary.x, bary.y - 1 }),
 		};
 	}
 	else {
 		return
 		{
-			RC(CarthesianCoords{ cart.x, cart.y }),
-			RC(CarthesianCoords{ cart.x + 1, cart.y }),
-			RC(CarthesianCoords{ cart.x, cart.y + 1 }),
+			RC(BarycentricCoordinates{ bary.x, bary.y }),
+			RC(BarycentricCoordinates{ bary.x + 1, bary.y }),
+			RC(BarycentricCoordinates{ bary.x, bary.y + 1 }),
 		};
 	}
+}
+
+RealCoordinates getCenter(vector<RealCoordinates> reals) {
+	RealCoordinates center{ 0.f, 0.f };
+	for (auto real : reals) {
+		center = center + real / float(reals.size());
+	}
+	return center;
+}
+
+RealCoordinates rotate(const RealCoordinates& real, const RealCoordinates& pivot, float radians) {
+	auto relative = real - pivot;
+	float coss = cos(radians), sinn = sin(radians);
+	return RealCoordinates{ coss * relative.x + sinn * relative.y, -sinn * relative.x + coss * relative.y } + pivot;
+}
+
+LogicalCoordinates rotate(const LogicalCoordinates& logi, const LogicalCoordinates& pivot, int angle) {
+	return LR(rotate(getCenter(getTriangleCorners(logi)), RL(pivot), angle * M_PI / 3.f));
 }

@@ -16,13 +16,16 @@ using namespace std;
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
+const int SCREEN_PADDING_X = 20;
+const int SCREEN_PADDING_Y = 20;
+
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
 
 //The window renderer
 SDL_Renderer* gRenderer = NULL;
 
-TriangleBoard gBoard(40, 12);
+TriangleBoard gBoard(21, 10);
 
 //Starts up SDL and creates window
 bool init() {
@@ -77,20 +80,19 @@ void close() {
 	SDL_Quit();
 }
 
-SDL_FPoint FPointFromReal(const RealCoords& real) {
-	return SDL_FPoint{ (real.x - .5f) * SCREEN_WIDTH / 12, SCREEN_HEIGHT - (real.y) * SCREEN_WIDTH / 12 };
+SDL_FPoint FPointFromReal(const RealCoordinates& real) {
+	return SDL_FPoint{ (real.x - .5f) * SCREEN_WIDTH / 12 + SCREEN_PADDING_X, SCREEN_HEIGHT - (real.y) * SCREEN_WIDTH / 12 - SCREEN_PADDING_Y };
 }
 
-RealCoords RealFromFPoint(const SDL_FPoint& fp) {
-	return RealCoords{ fp.x * 12 / SCREEN_WIDTH + .5f, (SCREEN_HEIGHT - fp.y) * 12 / SCREEN_WIDTH };
+RealCoordinates RealFromFPoint(const SDL_FPoint& fp) {
+	return RealCoordinates{ (fp.x - SCREEN_PADDING_X) * 12 / SCREEN_WIDTH + .5f, (SCREEN_HEIGHT - fp.y - SCREEN_PADDING_Y) * 12 / SCREEN_WIDTH };
 }
 
-void renderTriangle(SDL_Renderer* renderer, LogicalCoords logi, float padding = 0.1f) {
+void renderTriangle(SDL_Renderer* renderer, LogicalCoordinates logi, const SDL_Color& color, float padding = 0.1f) {
 	auto corners = getTriangleCorners(logi);
 	vector<SDL_Vertex> vertices;
-	RealCoords center = (corners[0] + corners[1] + corners[2]) / 3.f;
-	vertices.reserve(3);
-	SDL_Color color{ 255, 255, 255, 255 };
+	RealCoordinates center = (corners[0] + corners[1] + corners[2]) / 3.f;
+	vertices.reserve(3);	
 	for (int i = 0; i < 3; ++i) {
 		vertices.push_back({ FPointFromReal(center * padding + corners[i] * (1.f - padding)), color, SDL_FPoint{ 0 } });
 	}
@@ -103,7 +105,9 @@ void renderStaticBoard(SDL_Renderer* renderer) {
 	for (int xi = 0; xi < gBoard.width(); ++xi) {
 		for (int yi = 0; yi < gBoard.height(); ++yi) {
 			if (gBoard.board[xi][yi] == 0)
-			renderTriangle(renderer, LogicalCoords{ xi, yi });
+				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, SDL_Color{ 255, 255, 255, 255 }); 
+			else
+				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, SDL_Color{ 255, 0, 0, 255 });
 		}
 	}
 }
@@ -140,13 +144,23 @@ int main(int argc, char* args[])
 				case SDL_MOUSEBUTTONDOWN:
 					int x, y;
 					SDL_GetMouseState(&x, &y);
-					RealCoords real(RealFromFPoint(SDL_FPoint{ float(x),float(y) }));
-					CarthesianCoords cart = CR(real);
-					LogicalCoords logi = LC(cart);
-					//printf("Mouse: Screen: %i %i, Real: %f %f, Cart: %f %f, Logi: %i %i\n", x, y, real.x, real.y, cart.x, cart.y, logi.x, logi.y);
+					RealCoordinates real(RealFromFPoint(SDL_FPoint{ float(x),float(y) }));
+					BarycentricCoordinates bary = CR(real);
+					LogicalCoordinates logi = LC(bary);
+					printf("Mouse: Screen: %i %i, Real: %f %f, bary: %f %f, Logi: %i %i\n", x, y, real.x, real.y, bary.x, bary.y, logi.x, logi.y);
+					gBoard.board[logi.x][logi.y] = 0;
+					logi = rotate(logi, LogicalCoordinates{ 5,5 }, 1);
 					gBoard.board[logi.x][logi.y] = 1;
 					break;
 				}				
+			}
+			{
+				int x, y;
+				SDL_GetMouseState(&x, &y);
+				RealCoordinates real(RealFromFPoint(SDL_FPoint{ float(x),float(y) }));
+				BarycentricCoordinates bary = CR(real);
+				LogicalCoordinates logi = LC(bary);
+				printf("Mouse: Screen: %i %i, Real: %f %f, bary: %f %f, Logi: %i %i\n", x, y, real.x, real.y, bary.x, bary.y, logi.x, logi.y);
 			}
 
 			SDL_RenderClear(gRenderer);
