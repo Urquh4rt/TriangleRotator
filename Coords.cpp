@@ -103,3 +103,28 @@ RealCoordinates rotate(const RealCoordinates& real, const RealCoordinates& pivot
 LogicalCoordinates rotate(const LogicalCoordinates& logi, const LogicalCoordinates& pivot, int angle) {
 	return LR(rotate(getCenter(getTriangleCorners(logi)), RL(pivot), angle * M_PI / 3.f));
 }
+
+float Dot(const RealCoordinates& a, const RealCoordinates& b) {
+	return a.x * b.x + a.y * b.y;
+}
+
+// Compute barycentric coordinates (u, v, w) for
+// point p with respect to triangle (a, b, c)
+vector<float> getWeights(const RealCoordinates& p, const RealCoordinates& a, const RealCoordinates& b, const RealCoordinates& c)
+{
+	RealCoordinates v0 = b - a, v1 = c - a, v2 = p - a;
+	float d00 = Dot(v0, v0);
+	float d01 = Dot(v0, v1);
+	float d11 = Dot(v1, v1);
+	float d20 = Dot(v2, v0);
+	float d21 = Dot(v2, v1);
+	float denom = d00 * d11 - d01 * d01;
+	float v = (d11 * d20 - d01 * d21) / denom;
+	float w = (d00 * d21 - d01 * d20) / denom;
+	float u = 1.0f - v - w;
+	return { u, v, w };
+}
+
+Triangle& TriangleBoard::operator[](const LogicalCoordinates& logi) {
+	return board[logi.x][logi.y];
+}

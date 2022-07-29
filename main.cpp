@@ -8,6 +8,7 @@ and may not be redistributed without written permission.*/
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include "Coords.h"
 
 using namespace std;
@@ -112,11 +113,26 @@ void renderStaticBoard(SDL_Renderer* renderer) {
 	}
 }
 
+void print(const RealCoordinates& real, string suffix = "") {
+	printf("real%s: %f %f,", suffix, real.x, real.y);
+}
+
+#define PRINTCOORDS(var) printf("%s = %f %f, ", #var, var.x, var.y);
+#define PRINT(var) cout << #var << " = " << var << ", ";
+
+void print(const vector<RealCoordinates>& reals) {
+	for (int i = 0; i < reals.size(); ++i) {
+		print(reals[i], "" + i);
+	}
+}
+
 int main(int argc, char* args[])
 {
 	//Initialize SDL
 	if (init())
 	{
+
+		gBoard[LogicalCoordinates{ 3,3 }] = 1;
 
 		bool quit = false;
 		SDL_Event e;
@@ -142,15 +158,26 @@ int main(int argc, char* args[])
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:
-					int x, y;
-					SDL_GetMouseState(&x, &y);
-					RealCoordinates real(RealFromFPoint(SDL_FPoint{ float(x),float(y) }));
-					BarycentricCoordinates bary = CR(real);
-					LogicalCoordinates logi = LC(bary);
-					printf("Mouse: Screen: %i %i, Real: %f %f, bary: %f %f, Logi: %i %i\n", x, y, real.x, real.y, bary.x, bary.y, logi.x, logi.y);
-					gBoard.board[logi.x][logi.y] = 0;
-					logi = rotate(logi, LogicalCoordinates{ 5,5 }, 1);
-					gBoard.board[logi.x][logi.y] = 1;
+					{
+						int x, y;
+						SDL_GetMouseState(&x, &y);
+						auto real = RealFromFPoint(SDL_FPoint{ float(x),float(y) });
+						auto bary = CR(real);
+						auto logi = LR(real);
+						if (gBoard[logi] != 0) {
+							auto corners = getTriangleCorners(logi);
+							auto weights = getWeights(real, corners[0], corners[1], corners[2]);
+
+							auto destination = rotate(
+								logi, 
+								LR(corners[distance(weights.begin(), max_element(weights.begin(), weights.end()))]), 
+								e.button.button == SDL_BUTTON_LEFT ? 1 : -1);
+							if (gBoard[destination] == 0) {
+								gBoard[logi] = 0;
+								gBoard[destination] = 1;
+							}
+						}
+					}
 					break;
 				}				
 			}
@@ -160,7 +187,7 @@ int main(int argc, char* args[])
 				RealCoordinates real(RealFromFPoint(SDL_FPoint{ float(x),float(y) }));
 				BarycentricCoordinates bary = CR(real);
 				LogicalCoordinates logi = LC(bary);
-				printf("Mouse: Screen: %i %i, Real: %f %f, bary: %f %f, Logi: %i %i\n", x, y, real.x, real.y, bary.x, bary.y, logi.x, logi.y);
+				//printf("Mouse: Screen: %i %i, Real: %f %f, bary: %f %f, Logi: %i %i\n", x, y, real.x, real.y, bary.x, bary.y, logi.x, logi.y);
 			}
 
 			SDL_RenderClear(gRenderer);

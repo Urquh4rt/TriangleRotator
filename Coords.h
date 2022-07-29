@@ -63,8 +63,13 @@ RealCoordinates rotate(const RealCoordinates& real, const RealCoordinates& pivot
 
 LogicalCoordinates rotate(const LogicalCoordinates& logi, const LogicalCoordinates& pivot, int angle);
 
+float Dot(const RealCoordinates& a, const RealCoordinates& b);
+
+vector<float> getWeights(const RealCoordinates& p, const RealCoordinates& a, const RealCoordinates& b, const RealCoordinates& c);
+
+using Triangle = int;
 struct TriangleBoard {
-	vector<vector<int>> board;
+	vector<vector<Triangle>> board;
 
 	TriangleBoard(int width, int height) : board(vector<vector<int>>(width, vector<int>(height))) {}
 
@@ -76,4 +81,6 @@ struct TriangleBoard {
 	{
 		return board.size() > 0 ? board[0].size() : 0;
 	}
+
+	Triangle& operator[](const LogicalCoordinates& logi);
 };
