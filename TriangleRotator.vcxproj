@@ -21,9 +21,11 @@
   <ItemGroup>
     <ClCompile Include="Coords.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="TriangleBoard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Coords.h" />
+    <ClInclude Include="TriangleBoard.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

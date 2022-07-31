@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <list>
 using namespace std;
 
 bool isUpsideDown(int x, int y);
@@ -67,20 +68,4 @@ float Dot(const RealCoordinates& a, const RealCoordinates& b);
 
 vector<float> getWeights(const RealCoordinates& p, const RealCoordinates& a, const RealCoordinates& b, const RealCoordinates& c);
 
-using Triangle = int;
-struct TriangleBoard {
-	vector<vector<Triangle>> board;
-
-	TriangleBoard(int width, int height) : board(vector<vector<int>>(width, vector<int>(height))) {}
-
-	int width() const
-	{
-		return board.size();
-	}
-	int height() const
-	{
-		return board.size() > 0 ? board[0].size() : 0;
-	}
-
-	Triangle& operator[](const LogicalCoordinates& logi);
-};
+vector<LogicalCoordinates> neighborCandidates(const LogicalCoordinates& root, int width, int height);

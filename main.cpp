@@ -1,7 +1,3 @@
-/*This source code copyrighted by Lazy Foo' Productions (2004-2022)
-and may not be redistributed without written permission.*/
-
-//Using SDL and standard IO
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
@@ -10,6 +6,7 @@ and may not be redistributed without written permission.*/
 #include <vector>
 #include <algorithm>
 #include "Coords.h"
+#include "TriangleBoard.h"
 
 using namespace std;
 
@@ -39,7 +36,7 @@ bool init() {
 	else
 	{
 		//Create window
-		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		gWindow = SDL_CreateWindow("Triangle Rotator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		if (gWindow == NULL)
 		{
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
@@ -93,7 +90,7 @@ void renderTriangle(SDL_Renderer* renderer, LogicalCoordinates logi, const SDL_C
 	auto corners = getTriangleCorners(logi);
 	vector<SDL_Vertex> vertices;
 	RealCoordinates center = (corners[0] + corners[1] + corners[2]) / 3.f;
-	vertices.reserve(3);	
+	vertices.reserve(3);
 	for (int i = 0; i < 3; ++i) {
 		vertices.push_back({ FPointFromReal(center * padding + corners[i] * (1.f - padding)), color, SDL_FPoint{ 0 } });
 	}
@@ -105,10 +102,10 @@ void renderTriangle(SDL_Renderer* renderer, LogicalCoordinates logi, const SDL_C
 void renderStaticBoard(SDL_Renderer* renderer) {
 	for (int xi = 0; xi < gBoard.width(); ++xi) {
 		for (int yi = 0; yi < gBoard.height(); ++yi) {
-			if (gBoard.board[xi][yi] == 0)
-				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, SDL_Color{ 255, 255, 255, 255 }); 
+			if (gBoard.board[xi][yi] == NULL)
+				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, SDL_Color{ 255, 255, 255, 255 });
 			else
-				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, SDL_Color{ 255, 0, 0, 255 });
+				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, gBoard.board[xi][yi]->color);
 		}
 	}
 }
@@ -132,7 +129,12 @@ int main(int argc, char* args[])
 	if (init())
 	{
 
-		gBoard[LogicalCoordinates{ 3,3 }] = 1;
+		gBoard[LogicalCoordinates{ 3,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
+		gBoard[LogicalCoordinates{ 4,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
+		gBoard[LogicalCoordinates{ 5,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
+
+		//TriangleBoard<int> board(2, 2);
+		//board[LogicalCoordinates{ 1, 1 }];
 
 		bool quit = false;
 		SDL_Event e;
@@ -158,6 +160,9 @@ int main(int argc, char* args[])
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:
+					switch (e.button.button) {
+					case SDL_BUTTON_LEFT:
+					case SDL_BUTTON_RIGHT:
 					{
 						int x, y;
 						SDL_GetMouseState(&x, &y);
@@ -169,17 +174,43 @@ int main(int argc, char* args[])
 							auto weights = getWeights(real, corners[0], corners[1], corners[2]);
 
 							auto destination = rotate(
-								logi, 
-								LR(corners[distance(weights.begin(), max_element(weights.begin(), weights.end()))]), 
+								logi,
+								LR(corners[distance(weights.begin(), max_element(weights.begin(), weights.end()))]),
 								e.button.button == SDL_BUTTON_LEFT ? 1 : -1);
-							if (gBoard[destination] == 0) {
-								gBoard[logi] = 0;
-								gBoard[destination] = 1;
+							if (gBoard[destination] == NULL) {
+								gBoard[destination] = gBoard[logi];
+								gBoard[logi] = NULL;
 							}
 						}
+						break;
+					}
+					case SDL_BUTTON_MIDDLE:
+					{
+						printf("middle.\n");
+						int x, y;
+						SDL_GetMouseState(&x, &y);
+						auto real = RealFromFPoint(SDL_FPoint{ float(x),float(y) });
+						auto bary = CR(real);
+						auto logi = LR(real);
+						list<LogicalCoordinates> subgraph;
+						bool success = gBoard.getSubgraph(
+							logi,
+							LogicalCoordinates{ logi.x + 1, logi.y },
+							subgraph,
+							LogicalCoordinates{ logi.x - 1, logi.y });
+						if (success) {
+							for (auto logi : subgraph) {
+								gBoard[logi]->color = SDL_Color{ 0, 255, 0, 255 };
+							}
+						}
+						else {
+							printf("Cycle.\n");
+						}
+						break;
+					}
 					}
 					break;
-				}				
+				}
 			}
 			{
 				int x, y;

@@ -3,6 +3,7 @@
 #include <cassert>
 #include "Coords.h"
 
+
 bool isUpsideDown(int x, int y) {
 	return (x + y + 1000000) % 2 == 0;
 }
@@ -125,6 +126,20 @@ vector<float> getWeights(const RealCoordinates& p, const RealCoordinates& a, con
 	return { u, v, w };
 }
 
-Triangle& TriangleBoard::operator[](const LogicalCoordinates& logi) {
-	return board[logi.x][logi.y];
+vector<LogicalCoordinates> neighborCandidates(const LogicalCoordinates& root, int width, int height) {
+	vector<LogicalCoordinates> result;
+	result.reserve(3);
+	if (root.x > 0)
+		result.push_back(LogicalCoordinates{ root.x - 1, root.y });
+	if (root.x < width - 1)
+		result.push_back(LogicalCoordinates{ root.x + 1, root.y });
+	if (isUpsideDown(root)) {
+		if (root.y < height - 1)
+			result.push_back(LogicalCoordinates{ root.x, root.y + 1 });
+	}
+	else {
+		if (root.y > 0)
+			result.push_back(LogicalCoordinates{ root.x, root.y - 1 });
+	}
+	return result;
 }
