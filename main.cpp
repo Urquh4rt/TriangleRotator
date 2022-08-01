@@ -207,6 +207,12 @@ int main(int argc, char* args[])
 					case SDLK_p:
 						currentMode = PLAY;
 						break;
+					case SDLK_s:
+						gBoard.writeToFile();
+						break;
+					case SDLK_o:
+						gBoard.readFromFile();
+						break;
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:
