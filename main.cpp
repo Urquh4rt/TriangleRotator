@@ -1,5 +1,6 @@
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <stdio.h>
 #include <iostream>
 #include <string>
@@ -7,6 +8,7 @@
 #include <algorithm>
 #include "Coords.h"
 #include "TriangleBoard.h"
+#include "GameLogic.h"
 
 using namespace std;
 
@@ -58,14 +60,43 @@ bool init() {
 					printf("SDL_Image could not initialize! SDL_image Error: %s\n", IMG_GetError());
 					return false;
 				}
+				else if (TTF_Init() == -1)
+				{
+					printf("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+					return false;
+				}
 			}
 		}
 		return true;
 	}
 }
 
+SDL_Texture* getModeIcon(string text) {	//this opens a font style and sets a size
+	TTF_Font* Sans = TTF_OpenFont("media/OpenSans-Regular.ttf", 24);
+
+	// this is the color in rgb format,
+	// maxing out all would give you the color white,
+	// and it will be your text's color
+	SDL_Color White = { 255, 255, 255 };
+
+	// as TTF_RenderText_Solid could only be used on
+	// SDL_Surface then you have to create the surface first
+	SDL_Surface* surfaceMessage =
+		TTF_RenderText_Solid(Sans, text.c_str(), White);
+
+	// now you can convert it into a texture
+	SDL_Texture* Message = SDL_CreateTextureFromSurface(gRenderer, surfaceMessage);
+	SDL_FreeSurface(surfaceMessage);
+	return Message;
+}
+vector<SDL_Texture*> iconTextures;
+
 //Frees media and shuts down SDL
 void close() {
+
+	for (auto texture : iconTextures) {
+		SDL_DestroyTexture(texture);
+	}
 
 	SDL_DestroyRenderer(gRenderer);
 
@@ -74,6 +105,7 @@ void close() {
 	gWindow = NULL;
 
 	//Quit SDL subsystems
+	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
 }
@@ -84,6 +116,12 @@ SDL_FPoint FPointFromReal(const RealCoordinates& real) {
 
 RealCoordinates RealFromFPoint(const SDL_FPoint& fp) {
 	return RealCoordinates{ (fp.x - SCREEN_PADDING_X) * 12 / SCREEN_WIDTH + .5f, (SCREEN_HEIGHT - fp.y - SCREEN_PADDING_Y) * 12 / SCREEN_WIDTH };
+}
+
+RealCoordinates getRealMousePosition() {
+	int x, y;
+	SDL_GetMouseState(&x, &y);
+	return RealFromFPoint(SDL_FPoint{ float(x),float(y) });
 }
 
 void renderTriangle(SDL_Renderer* renderer, LogicalCoordinates logi, const SDL_Color& color, float padding = 0.1f) {
@@ -123,12 +161,22 @@ void print(const vector<RealCoordinates>& reals) {
 	}
 }
 
+enum GameMode {
+	PLAY,
+	EDIT,
+};
+GameMode currentMode = PLAY;
+
 int main(int argc, char* args[])
 {
 	//Initialize SDL
 	if (init())
 	{
 
+		iconTextures = {
+		   getModeIcon("P"),
+		   getModeIcon("E"),
+		};
 		gBoard[LogicalCoordinates{ 3,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
 		gBoard[LogicalCoordinates{ 4,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
 		gBoard[LogicalCoordinates{ 5,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
@@ -153,76 +201,58 @@ int main(int argc, char* args[])
 					case SDLK_ESCAPE:
 						quit = true;
 						break;
-					case SDLK_UP:
+					case SDLK_e:
+						currentMode = EDIT;
 						break;
-					case SDLK_DOWN:
+					case SDLK_p:
+						currentMode = PLAY;
 						break;
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:
-					switch (e.button.button) {
-					case SDL_BUTTON_LEFT:
-					case SDL_BUTTON_RIGHT:
-					{
-						int x, y;
-						SDL_GetMouseState(&x, &y);
-						auto real = RealFromFPoint(SDL_FPoint{ float(x),float(y) });
-						auto bary = CR(real);
-						auto logi = LR(real);
-						if (gBoard[logi] != 0) {
-							auto corners = getTriangleCorners(logi);
-							auto weights = getWeights(real, corners[0], corners[1], corners[2]);
-
-							auto destination = rotate(
-								logi,
-								LR(corners[distance(weights.begin(), max_element(weights.begin(), weights.end()))]),
-								e.button.button == SDL_BUTTON_LEFT ? 1 : -1);
-							if (gBoard[destination] == NULL) {
-								gBoard[destination] = gBoard[logi];
-								gBoard[logi] = NULL;
-							}
+					if (currentMode == PLAY) {
+						switch (e.button.button) {
+						case SDL_BUTTON_LEFT:
+						case SDL_BUTTON_RIGHT:
+						{
+							simpleRotationAroundSelectedCorner(gBoard, getRealMousePosition(), e.button.button == SDL_BUTTON_LEFT);
 						}
 						break;
-					}
-					case SDL_BUTTON_MIDDLE:
-					{
-						printf("middle.\n");
-						int x, y;
-						SDL_GetMouseState(&x, &y);
-						auto real = RealFromFPoint(SDL_FPoint{ float(x),float(y) });
-						auto bary = CR(real);
-						auto logi = LR(real);
-						list<LogicalCoordinates> subgraph;
-						bool success = gBoard.getSubgraph(
-							logi,
-							LogicalCoordinates{ logi.x + 1, logi.y },
-							subgraph,
-							LogicalCoordinates{ logi.x - 1, logi.y });
-						if (success) {
-							for (auto logi : subgraph) {
-								gBoard[logi]->color = SDL_Color{ 0, 255, 0, 255 };
-							}
-						}
-						else {
-							printf("Cycle.\n");
+						case SDL_BUTTON_MIDDLE:
+						{
+							markCornersTest(gBoard, getRealMousePosition());
 						}
 						break;
+						}
 					}
+					if (currentMode == EDIT) {
+						switch (e.button.button) {
+						case SDL_BUTTON_LEFT:
+							if (gBoard[LR(getRealMousePosition())] == NULL)
+								gBoard[LR(getRealMousePosition())] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
+							else {
+								delete gBoard[LR(getRealMousePosition())];
+								gBoard[LR(getRealMousePosition())] = NULL;
+							}
+						break;
+						}
 					}
 					break;
 				}
 			}
-			{
-				int x, y;
-				SDL_GetMouseState(&x, &y);
-				RealCoordinates real(RealFromFPoint(SDL_FPoint{ float(x),float(y) }));
-				BarycentricCoordinates bary = CR(real);
-				LogicalCoordinates logi = LC(bary);
-				//printf("Mouse: Screen: %i %i, Real: %f %f, bary: %f %f, Logi: %i %i\n", x, y, real.x, real.y, bary.x, bary.y, logi.x, logi.y);
-			}
 
 			SDL_RenderClear(gRenderer);
 			renderStaticBoard(gRenderer);
+
+			{
+
+				SDL_Rect Message_rect; //create a rect
+				Message_rect.x = 0;  //controls the rect's x coordinate 
+				Message_rect.y = 0; // controls the rect's y coordinte
+				Message_rect.w = 25; // controls the width of the rect
+				Message_rect.h = 50; // controls the height of the rect
+				SDL_RenderCopy(gRenderer, iconTextures[currentMode], NULL, &Message_rect);
+			}
 			SDL_RenderPresent(gRenderer);
 		}
 	}

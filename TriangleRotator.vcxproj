@@ -20,11 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Coords.cpp" />
+    <ClCompile Include="GameLogic.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TriangleBoard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Coords.h" />
+    <ClInclude Include="GameLogic.h" />
     <ClInclude Include="TriangleBoard.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -87,8 +89,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\VSlibs\SDL2-2.0.22\include;C:\VSlibs\SDL2_image-2.6.0\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VSlibs\SDL2-2.0.22\lib\x64;C:\VSlibs\SDL2_image-2.6.0\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VSlibs\SDL2_ttf-2.20.0\include;C:\VSlibs\SDL2-2.0.22\include;C:\VSlibs\SDL2_image-2.6.0\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\VSlibs\SDL2-2.0.22\lib\x64;C:\VSlibs\SDL2_ttf-2.20.0\lib\x64;C:\VSlibs\SDL2_image-2.6.0\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -131,7 +133,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
