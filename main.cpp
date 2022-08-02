@@ -8,7 +8,6 @@
 #include <algorithm>
 #include "Coords.h"
 #include "TriangleBoard.h"
-#include "GameLogic.h"
 
 using namespace std;
 
@@ -221,12 +220,12 @@ int main(int argc, char* args[])
 						case SDL_BUTTON_LEFT:
 						case SDL_BUTTON_RIGHT:
 						{
-							simpleRotationAroundSelectedCorner(gBoard, getRealMousePosition(), e.button.button == SDL_BUTTON_LEFT);
+							gBoard.simpleRotationAroundSelectedCorner(getRealMousePosition(), e.button.button == SDL_BUTTON_LEFT);
 						}
 						break;
 						case SDL_BUTTON_MIDDLE:
 						{
-							markCornersTest(gBoard, getRealMousePosition());
+							gBoard.markCornersTest(getRealMousePosition());
 						}
 						break;
 						}

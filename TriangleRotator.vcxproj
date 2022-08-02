@@ -21,14 +21,12 @@
   <ItemGroup>
     <ClCompile Include="Coords.cpp" />
     <ClCompile Include="FileSelector.cpp" />
-    <ClCompile Include="GameLogic.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TriangleBoard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Coords.h" />
     <ClInclude Include="FileSelector.h" />
-    <ClInclude Include="GameLogic.h" />
     <ClInclude Include="TriangleBoard.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
