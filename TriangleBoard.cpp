@@ -26,15 +26,14 @@ bool TriangleBoard::getSubgraph(const LogicalCoordinates& root, const LogicalCoo
 
 void TriangleBoard::simpleRotationAroundSelectedCorner(RealCoordinates mouseLocation, bool clockwise)
 {
-	auto bary = CR(mouseLocation);
-	auto logi = LR(mouseLocation);
+	LogicalCoordinates logi = mouseLocation;
 	if ((*this)[logi] != 0) {
 		auto corners = getTriangleCorners(logi);
 		auto weights = getWeights(mouseLocation, corners[0], corners[1], corners[2]);
 
 		auto destination = rotate(
 			logi,
-			LR(corners[distance(weights.begin(), max_element(weights.begin(), weights.end()))]),
+			LogicalCoordinates(corners[distance(weights.begin(), max_element(weights.begin(), weights.end()))]),
 			clockwise ? 1 : -1);
 		if ((*this)[destination] == NULL) {
 			(*this)[destination] = (*this)[logi];
@@ -44,8 +43,7 @@ void TriangleBoard::simpleRotationAroundSelectedCorner(RealCoordinates mouseLoca
 }
 
 void TriangleBoard::markCornersTest(RealCoordinates mouseLocation) {
-	auto bary = CR(mouseLocation);
-	auto logi = LR(mouseLocation);
+	LogicalCoordinates logi = mouseLocation;
 	list<LogicalCoordinates> subgraph;
 	bool success = getSubgraph(
 		logi,
@@ -63,8 +61,26 @@ void TriangleBoard::markCornersTest(RealCoordinates mouseLocation) {
 	}
 }
 
-bool TriangleBoard::rotateTriangles(const list<LogicalCoordinates>& triangles, LogicalCoordinates pivot, bool clockwise) {
-	return false;
+void TriangleBoard::rotateOnClick(RealCoordinates mouseLocation) {
+	
+}
+
+bool TriangleBoard::rotateTriangles(list<LogicalCoordinates>& triangles, LogicalCoordinates pivot, bool clockwise) {
+	for (int i = 0; i < 5; ++i) {
+		for (auto it = triangles.begin(); it != triangles.end(); ++it) {
+			auto triangle = rotate(*it, pivot, clockwise ? 1 : -1);
+			if ((*this)[triangle] == NULL)
+				*it = triangle;
+			else {
+				for (auto it2 = triangles.begin(); it2 != it; ++it2) {
+					*it2 = rotate(*it2, pivot, clockwise ? -1 : 1);
+				}
+				return false;
+			}
+
+		}
+	}
+	return true;
 }
 
 void TriangleBoard::writeToFile() {

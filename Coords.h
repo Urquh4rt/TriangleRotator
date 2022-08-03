@@ -2,59 +2,63 @@
 
 #include <vector>
 #include <list>
+#include <algorithm>
 using namespace std;
 
 bool isUpsideDown(int x, int y);
 
 int f2i(float x);
 
-struct RealCoordinates {
-	float x;
-	float y;
+template<class T, typename number>
+struct FloatCoordinates {
+public:
+	number x;
+	number y;
 
-	RealCoordinates operator+ (const RealCoordinates& real) const {
-		return RealCoordinates{ x + real.x, y + real.y };
+	T operator+ (const T& real) const {
+		return T{ x + real.x, y + real.y };
 	}
 
-	RealCoordinates operator- (const RealCoordinates& real) const {
-		return RealCoordinates{ x - real.x, y - real.y };
+	T operator- (const T& real) const {
+		return T{ x - real.x, y - real.y };
 	}
 
-	RealCoordinates operator* (float c) const {
-		return RealCoordinates{ c * x, c * y };
+	T operator* (float c) const {
+		return T{ c * x, c * y };
 	}
 
-	RealCoordinates operator/ (float c) const {
-		return RealCoordinates{ x / c, y / c };
+	T operator/ (float c) const {
+		return T{ x / c, y / c };
+	}
+
+	bool operator== (const T& p) { return p.x == this->x && p.y == this->y; }
+
+	number dot(const T& t) const {
+		return x * t.x + y * t.y;
 	}
 };
 
-struct BarycentricCoordinates {
-	float x;
-	float y;
+struct LogicalCoordinates;
+struct RealCoordinates;
+struct BarycentricCoordinates;
+
+struct LogicalCoordinates : FloatCoordinates<LogicalCoordinates, int> {
+	operator BarycentricCoordinates() const;
+	operator RealCoordinates() const;
 };
 
-struct LogicalCoordinates {
-	int x;
-	int y;
+struct RealCoordinates : public FloatCoordinates<RealCoordinates, float> {
+	operator BarycentricCoordinates() const;
+	operator LogicalCoordinates() const;
+};
 
-	bool operator== (const LogicalCoordinates& p) { return p.x == this->x && p.y == this->y; }
+struct BarycentricCoordinates : public FloatCoordinates<BarycentricCoordinates, float> {
+	operator RealCoordinates() const;
+	// maps a point within a triangle to the root corner of the triangle (bottom left or top right, depending on the orientation of the triangle)
+	operator LogicalCoordinates() const;
 };
 
 bool isUpsideDown(LogicalCoordinates logi);
-
-RealCoordinates RC(const BarycentricCoordinates& bary);
-
-BarycentricCoordinates CR(const RealCoordinates& real);
-
-BarycentricCoordinates CL(const LogicalCoordinates& logi);
-
-// maps a point within a triangle to the root corner of the triangle (bottom left or top right, depending on the orientation of the triangle)
-LogicalCoordinates LC(const BarycentricCoordinates& bary);
-
-RealCoordinates RL(const LogicalCoordinates& logi);
-
-LogicalCoordinates LR(const RealCoordinates& real);
 
 vector<RealCoordinates> getTriangleCorners(const LogicalCoordinates& logi);
 
@@ -69,3 +73,12 @@ float Dot(const RealCoordinates& a, const RealCoordinates& b);
 vector<float> getWeights(const RealCoordinates& p, const RealCoordinates& a, const RealCoordinates& b, const RealCoordinates& c);
 
 vector<LogicalCoordinates> neighborCandidates(const LogicalCoordinates& root, int width, int height);
+
+//// first = left, second = right
+////	  r
+//// c ____
+////   \  /
+////  l \/
+//pair<LogicalCoordinates, LogicalCoordinates> neighborsOfCorner(LogicalCoordinates triangle, BarycentricCoordinates corner) {
+//	auto allCorners = getTriangleCorners(triangle);
+//}

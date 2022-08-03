@@ -40,7 +40,9 @@ struct TriangleBoard {
 
 	void markCornersTest(RealCoordinates mouseLocation);
 
-	bool rotateTriangles(const list<LogicalCoordinates>& triangles, LogicalCoordinates pivot, bool clockwise);
+	void rotateOnClick(RealCoordinates mouseLocation);
+
+	bool rotateTriangles(list<LogicalCoordinates>& triangles, LogicalCoordinates pivot, bool clockwise);
 
 	void writeToFile();
 

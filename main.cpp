@@ -233,11 +233,11 @@ int main(int argc, char* args[])
 					if (currentMode == EDIT) {
 						switch (e.button.button) {
 						case SDL_BUTTON_LEFT:
-							if (gBoard[LR(getRealMousePosition())] == NULL)
-								gBoard[LR(getRealMousePosition())] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
+							if (gBoard[getRealMousePosition()] == NULL)
+								gBoard[getRealMousePosition()] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
 							else {
-								delete gBoard[LR(getRealMousePosition())];
-								gBoard[LR(getRealMousePosition())] = NULL;
+								delete gBoard[getRealMousePosition()];
+								gBoard[getRealMousePosition()] = NULL;
 							}
 						break;
 						}
