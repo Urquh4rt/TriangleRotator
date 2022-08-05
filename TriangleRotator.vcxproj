@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Coords.cpp" />
+    <ClCompile Include="debug.cpp" />
     <ClCompile Include="FileSelector.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TriangleBoard.cpp" />

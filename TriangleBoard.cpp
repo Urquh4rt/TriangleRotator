@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include "FileSelector.h"
+#include "debug.cpp"
 
 bool TriangleBoard::getSubgraph(const LogicalCoordinates& root, const LogicalCoordinates& subroot, list<LogicalCoordinates>& result, const LogicalCoordinates& pivot) {
 	vector<vector<bool>> visited(width(), vector<bool>(height()));
@@ -12,7 +13,7 @@ bool TriangleBoard::getSubgraph(const LogicalCoordinates& root, const LogicalCoo
 	while (!queue.empty()) {
 		auto logi = queue.front();
 		queue.erase(queue.begin());
-		if ((*this)[logi] != NULL && !visited[logi.x][logi.y]) {
+		if (isInBounds(logi) && (*this)[logi] != NULL && !visited[logi.x][logi.y]) {
 			if (logi == pivot)
 				return false;
 			visited[logi.x][logi.y] = true;
@@ -43,7 +44,10 @@ void TriangleBoard::simpleRotationAroundSelectedCorner(RealCoordinates mouseLoca
 	}
 }
 
-bool TriangleBoard::complexRotationAroundSelectedCorner(RealCoordinates mouseLocation) {
+bool TriangleBoard::complexRotationAroundSelectedCorner(
+	RealCoordinates mouseLocation,
+	list<pair<pair<LogicalCoordinates, LogicalCoordinates>, Triangle*>>& triangles,
+	RealCoordinates& pivot, float& rotationSteps, bool& clockwise) {
 	LogicalCoordinates logi = mouseLocation;
 	if ((*this)[logi] != NULL) {
 		auto corners = getTriangleCorners(logi);
@@ -77,30 +81,26 @@ bool TriangleBoard::complexRotationAroundSelectedCorner(RealCoordinates mouseLoc
 			return false;
 		}
 
+		pivot = corners[indexOfClosestCorner];
 		LogicalCoordinates oppositeNeighbor = getCenter(vector<RealCoordinates>{
 			corners[(indexOfClosestCorner + 1) % 3],
 				corners[(indexOfClosestCorner + 2) % 3],
 				corners[(indexOfClosestCorner + 1) % 3] + corners[(indexOfClosestCorner + 2) % 3] - corners[indexOfClosestCorner]
 		});
-		list<LogicalCoordinates> originalTriangles;
-		originalTriangles.push_back(logi);
-		if (getSubgraph(logi, oppositeNeighbor, originalTriangles, canRotateClockwise ? nextNeighborClockwise : prevNeighborClockwise)) {
-			//if (render) {
-			//	for (auto triangle : originalTriangles) {
-			//		(*this)[triangle] = new Triangle{ SDL_Color{ 0, 255, 255, 255 } };
-			//	}
-			//	render();
-			//	int x;
-			//	cin >> x;
-			//}
-			list<LogicalCoordinates> trianglesRotated = originalTriangles;
-			if (rotateTriangles(trianglesRotated, corners[indexOfClosestCorner], canRotateClockwise)) {
-				auto it1 = originalTriangles.begin(), it2 = trianglesRotated.begin();
-				while (it1 != originalTriangles.end()) {
-					(*this)[*it2] = (*this)[*it1];
-					(*this)[*it1] = NULL;
-					++it1;
-					++it2;
+		//triangles.push_back(make_pair(logi, (*this)[logi]));
+		list<LogicalCoordinates> originalLocations;
+		originalLocations.push_back(logi);
+		if (getSubgraph(logi, oppositeNeighbor, originalLocations, canRotateClockwise ? nextNeighborClockwise : prevNeighborClockwise)) {
+			list<LogicalCoordinates> targetLocations;
+			clockwise = canRotateClockwise;
+			if (rotateTriangles(originalLocations, targetLocations, corners[indexOfClosestCorner], rotationSteps, canRotateClockwise)) {
+				auto it_originalLocation = originalLocations.begin();
+				auto it_targetLocation = targetLocations.begin();
+				while (it_originalLocation != originalLocations.end()) {
+					triangles.push_back(make_pair(make_pair(*it_originalLocation, *it_targetLocation), (*this)[*it_originalLocation]));
+					(*this)[*it_originalLocation] = NULL;
+					++it_originalLocation;
+					++it_targetLocation;
 				}
 				return true;
 			}
@@ -137,26 +137,32 @@ void TriangleBoard::rotateOnClick(RealCoordinates mouseLocation) {
 	
 }
 
-bool TriangleBoard::rotateTriangles(list<LogicalCoordinates>& triangles, const RealCoordinates& pivot, bool clockwise) {
+bool TriangleBoard::rotateTriangles(const list<LogicalCoordinates>& originalLocations, list<LogicalCoordinates>& targetLocations,
+	const RealCoordinates& pivot, float& rotationSteps, bool clockwise) {
+	targetLocations = originalLocations;
 	for (int i = 0; i < 5; ++i) {
-		for (auto it = triangles.begin(); it != triangles.end(); ++it) {
+		for (auto it = targetLocations.begin(); it != targetLocations.end(); ++it) {
 			auto triangle = rotate(*it, pivot, clockwise ? 1 : -1);
-			if ((*this)[triangle] == NULL)
+			if (isEmpty(triangle)) {
 				*it = triangle;
+			}
 			else {
-				for (auto it2 = triangles.begin(); it2 != it; ++it2) {
+				for (auto it2 = targetLocations.begin(); it2 != it; ++it2) {
 					*it2 = rotate(*it2, pivot, clockwise ? -1 : 1);
 				}
+				rotationSteps = i;
 				return i != 0;
 			}
-
 		}
 	}
 	return true;
 }
 
 void TriangleBoard::writeToFile() {
-	string path = getSaveFileName();
+	writeToFile(getSaveFileName());
+}
+
+void TriangleBoard::writeToFile(string path) {
 	ofstream file;
 	file.open(path);
 	file << width() << " " << height() << endl;
@@ -167,11 +173,13 @@ void TriangleBoard::writeToFile() {
 		file << endl;
 	}
 	file.close();
-
 }
 
 void TriangleBoard::readFromFile() {
-	string path = getOpenFileName();
+	readFromFile(getOpenFileName());
+}
+
+void TriangleBoard::readFromFile(string path) {
 	ifstream file;
 	file.open(path);
 	int w, h;

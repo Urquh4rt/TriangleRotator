@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <chrono>
+#include <ctime>
+#include "debug.cpp"
 #include "Coords.h"
 #include "TriangleBoard.h"
 
@@ -123,40 +126,42 @@ RealCoordinates getRealMousePosition() {
 	return RealFromFPoint(SDL_FPoint{ float(x),float(y) });
 }
 
-void renderTriangle(SDL_Renderer* renderer, LogicalCoordinates logi, const SDL_Color& color, float padding = 0.1f) {
+void renderTriangle(
+		SDL_Renderer* renderer, LogicalCoordinates logi, const SDL_Color& color, 
+		RealCoordinates offset = { 0.f ,0.f }, RealCoordinates pivot = { 0.f ,0.f }, float rotationSteps = 0.f, float padding = 0.1f
+	) {
 	auto corners = getTriangleCorners(logi);
 	vector<SDL_Vertex> vertices;
 	RealCoordinates center = (corners[0] + corners[1] + corners[2]) / 3.f;
 	vertices.reserve(3);
 	for (int i = 0; i < 3; ++i) {
-		vertices.push_back({ FPointFromReal(center * padding + corners[i] * (1.f - padding)), color, SDL_FPoint{ 0 } });
+		vertices.push_back({ 
+			FPointFromReal((center * padding + corners[i] * (1.f - padding) - pivot)
+			.rotate(rotationSteps) + pivot + offset), color, SDL_FPoint{ 0 } });
 	}
 	if (SDL_RenderGeometry(renderer, nullptr, vertices.data(), vertices.size(), nullptr, 0) == -1) {
 		printf("Could not render: %s\n", IMG_GetError());
 	}
 }
 
-void renderStaticBoard(SDL_Renderer* renderer) {
+void renderStaticBoard(
+	SDL_Renderer* renderer, SDL_Color emptyTriangleColor = { 255, 255, 255, 255 },
+	RealCoordinates offset = { 0.f ,0.f }, RealCoordinates pivot = { 0.f ,0.f }, float rotationSteps = 0.f) {
 	for (int xi = 0; xi < gBoard.width(); ++xi) {
 		for (int yi = 0; yi < gBoard.height(); ++yi) {
 			if (gBoard.board[xi][yi] == NULL)
-				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, SDL_Color{ 255, 255, 255, 255 });
+				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, emptyTriangleColor, offset, pivot, rotationSteps);
 			else
-				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, gBoard.board[xi][yi]->color);
+				renderTriangle(renderer, LogicalCoordinates{ xi, yi }, gBoard.board[xi][yi]->color, offset, pivot, rotationSteps);
 		}
 	}
 }
 
-void print(const RealCoordinates& real, string suffix = "") {
-	printf("real%s: %f %f,", suffix, real.x, real.y);
-}
-
-#define PRINTCOORDS(var) printf("%s = %f %f, ", #var, var.x, var.y);
-#define PRINT(var) cout << #var << " = " << var << ", ";
-
-void print(const vector<RealCoordinates>& reals) {
-	for (int i = 0; i < reals.size(); ++i) {
-		print(reals[i], "" + i);
+void renderStaticBoardPartially(
+	SDL_Renderer* renderer, const list<LogicalCoordinates>& trianglesToRender,
+	RealCoordinates offset = { 0.f ,0.f }, RealCoordinates pivot = { 0.f ,0.f }, float rotationRadians = 0.f) {
+	for (auto logi : trianglesToRender) {
+		renderTriangle(renderer, logi, gBoard[logi]->color, offset, pivot, rotationRadians);
 	}
 }
 
@@ -176,9 +181,8 @@ int main(int argc, char* args[])
 		   getModeIcon("P"),
 		   getModeIcon("E"),
 		};
-		gBoard[LogicalCoordinates{ 3,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
-		gBoard[LogicalCoordinates{ 4,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
-		gBoard[LogicalCoordinates{ 5,3 }] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
+
+		gBoard.readFromFile("default.data");
 
 		//TriangleBoard<int> board(2, 2);
 		//board[LogicalCoordinates{ 1, 1 }];
@@ -189,75 +193,110 @@ int main(int argc, char* args[])
 
 		renderStaticBoard(gRenderer);
 
+		list<pair<pair<LogicalCoordinates, LogicalCoordinates>, Triangle*>> trianglesBeingRotated;
+		RealCoordinates pivot;
+		float currentRotationSteps = 0.f;
+		float targetRotationSteps = 0.f;
+		bool clockwise = false;
+		bool animateRotation = 0;
+
+		auto lastFrame = chrono::system_clock::now();
 		while (!quit) {
-			while (SDL_PollEvent(&e) != 0) {
-				switch (e.type) {
-				case SDL_QUIT:
-					quit = true;
-					break;
-				case SDL_KEYDOWN:
-					switch (e.key.keysym.sym) {
-					case SDLK_ESCAPE:
+			SDL_RenderClear(gRenderer);
+			if (!animateRotation) {
+				while (SDL_PollEvent(&e) != 0) {
+					switch (e.type) {
+					case SDL_QUIT:
 						quit = true;
 						break;
-					case SDLK_e:
-						currentMode = EDIT;
-						break;
-					case SDLK_p:
-						currentMode = PLAY;
-						break;
-					case SDLK_s:
-						gBoard.writeToFile();
-						break;
-					case SDLK_o:
-						gBoard.readFromFile();
-						break;
-					}
-					break;
-				case SDL_MOUSEBUTTONDOWN:
-					if (currentMode == PLAY) {
-						switch (e.button.button) {
-						case SDL_BUTTON_LEFT:
-						case SDL_BUTTON_RIGHT:
-						{
-							//gBoard.simpleRotationAroundSelectedCorner(getRealMousePosition(), e.button.button == SDL_BUTTON_LEFT);
-							gBoard.complexRotationAroundSelectedCorner(getRealMousePosition());
+					case SDL_KEYDOWN:
+						switch (e.key.keysym.sym) {
+						case SDLK_ESCAPE:
+							quit = true;
+							break;
+						case SDLK_e:
+							currentMode = EDIT;
+							break;
+						case SDLK_p:
+							currentMode = PLAY;
+							break;
+						case SDLK_s:
+							gBoard.writeToFile();
+							break;
+						case SDLK_o:
+							gBoard.readFromFile();
+							break;
 						}
 						break;
-						case SDL_BUTTON_MIDDLE:
-						{
-							gBoard.markCornersTest(getRealMousePosition());
-						}
-						break;
-						}
-					}
-					if (currentMode == EDIT) {
-						switch (e.button.button) {
-						case SDL_BUTTON_LEFT:
-							if (gBoard[getRealMousePosition()] == NULL)
-								gBoard[getRealMousePosition()] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
-							else {
-								delete gBoard[getRealMousePosition()];
-								gBoard[getRealMousePosition()] = NULL;
+					case SDL_MOUSEBUTTONDOWN:
+						if (currentMode == PLAY) {
+							switch (e.button.button) {
+							case SDL_BUTTON_LEFT:
+							case SDL_BUTTON_RIGHT:
+							{
+								//gBoard.simpleRotationAroundSelectedCorner(getRealMousePosition(), e.button.button == SDL_BUTTON_LEFT);
+								trianglesBeingRotated.clear();
+								if (gBoard.complexRotationAroundSelectedCorner(
+									getRealMousePosition(), trianglesBeingRotated, pivot, targetRotationSteps, clockwise)) {
+									currentRotationSteps = 0.f;
+									animateRotation = true;
+									lastFrame = chrono::system_clock::now();
+								}
+
 							}
-						break;
+							break;
+							case SDL_BUTTON_MIDDLE:
+							{
+								gBoard.markCornersTest(getRealMousePosition());
+							}
+							break;
+							}
 						}
+						if (currentMode == EDIT) {
+							switch (e.button.button) {
+							case SDL_BUTTON_LEFT:
+								if (gBoard[getRealMousePosition()] == NULL)
+									gBoard[getRealMousePosition()] = new Triangle{ SDL_Color{ 255, 0, 0, 255 } };
+								else {
+									delete gBoard[getRealMousePosition()];
+									gBoard[getRealMousePosition()] = NULL;
+								}
+								break;
+							}
+						}
+						break;
 					}
-					break;
 				}
 			}
-
-			SDL_RenderClear(gRenderer);
 			renderStaticBoard(gRenderer);
 
 			{
-
 				SDL_Rect Message_rect; //create a rect
 				Message_rect.x = 0;  //controls the rect's x coordinate 
 				Message_rect.y = 0; // controls the rect's y coordinte
 				Message_rect.w = 25; // controls the width of the rect
 				Message_rect.h = 50; // controls the height of the rect
 				SDL_RenderCopy(gRenderer, iconTextures[currentMode], NULL, &Message_rect);
+			}
+			if (animateRotation) {
+				auto currentFrame = chrono::system_clock::now();
+				chrono::duration<float> elapsed_seconds = currentFrame - lastFrame;
+				lastFrame = chrono::system_clock::now();
+				currentRotationSteps = min(
+					targetRotationSteps, 
+					3.f*elapsed_seconds.count() * targetRotationSteps  + (1.f - elapsed_seconds.count()) * currentRotationSteps);
+
+				for (auto triangle : trianglesBeingRotated) {
+					renderTriangle(gRenderer, triangle.first.first, triangle.second->color, { 0.f, 0.f }, pivot, 
+						clockwise ? currentRotationSteps : -currentRotationSteps);
+				}
+				if (abs(currentRotationSteps - targetRotationSteps) < 0.01f) {
+					cout << "done" << endl;
+					animateRotation = false;
+					for (auto triangle : trianglesBeingRotated) {
+						gBoard[triangle.first.second] = triangle.second;
+					}
+				}
 			}
 			SDL_RenderPresent(gRenderer);
 		}

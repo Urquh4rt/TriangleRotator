@@ -47,15 +47,23 @@ struct TriangleBoard {
 
 	void simpleRotationAroundSelectedCorner(RealCoordinates mouseLocation, bool clockwise);
 
-	bool complexRotationAroundSelectedCorner(RealCoordinates mouseLocation);
+	bool complexRotationAroundSelectedCorner(
+		RealCoordinates mouseLocation, 
+		list<pair<pair<LogicalCoordinates, LogicalCoordinates>, Triangle*>>& triangles, 
+		RealCoordinates& pivot, float& rotationSteps, bool& clockwise);
 
 	void markCornersTest(RealCoordinates mouseLocation);
 
 	void rotateOnClick(RealCoordinates mouseLocation);
 
-	bool rotateTriangles(list<LogicalCoordinates>& triangles, const RealCoordinates& pivot, bool clockwise);
+	bool rotateTriangles(const list<LogicalCoordinates>& originalLocations, list<LogicalCoordinates>& targetLocations, 
+		const RealCoordinates& pivot, float& rotationSteps, bool clockwise);
 
 	void writeToFile();
 
+	void writeToFile(string path);
+
 	void readFromFile();
+
+	void readFromFile(string path);
 };

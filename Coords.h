@@ -1,5 +1,7 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -36,6 +38,17 @@ public:
 
 	number dot(const T& t) const {
 		return x * t.x + y * t.y;
+	}
+
+	T rotate(float rotationSteps) {
+		static_assert(derived_from<T, FloatCoordinates<T, float>> == true);
+		float coss = cos(rotationSteps * M_PI / 3.f), sinn = sin(rotationSteps * M_PI / 3.f);
+		return T{ coss * x + sinn * y, -sinn * x + coss * y };
+	}
+
+	T rotateAroundPivot(const T& pivot, float rotationSteps) {
+		static_assert(derived_from<T, FloatCoordinates<T, float>> == true);
+		return pivot + (*this - pivot).rotate(rotationSteps);
 	}
 };
 
