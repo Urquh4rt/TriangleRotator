@@ -1,6 +1,7 @@
 #include "TriangleBoard.h"
 #include <string>
 #include <algorithm>
+#include <iostream>
 #include "FileSelector.h"
 
 bool TriangleBoard::getSubgraph(const LogicalCoordinates& root, const LogicalCoordinates& subroot, list<LogicalCoordinates>& result, const LogicalCoordinates& pivot) {
@@ -30,14 +31,85 @@ void TriangleBoard::simpleRotationAroundSelectedCorner(RealCoordinates mouseLoca
 	if ((*this)[logi] != 0) {
 		auto corners = getTriangleCorners(logi);
 		auto weights = getWeights(mouseLocation, corners[0], corners[1], corners[2]);
-
+		int indexOfClosestCorner = distance(weights.begin(), max_element(weights.begin(), weights.end()));
 		auto destination = rotate(
 			logi,
-			LogicalCoordinates(corners[distance(weights.begin(), max_element(weights.begin(), weights.end()))]),
+			corners[indexOfClosestCorner],
 			clockwise ? 1 : -1);
 		if ((*this)[destination] == NULL) {
 			(*this)[destination] = (*this)[logi];
 			(*this)[logi] = NULL;
+		}
+	}
+}
+
+bool TriangleBoard::complexRotationAroundSelectedCorner(RealCoordinates mouseLocation) {
+	LogicalCoordinates logi = mouseLocation;
+	if ((*this)[logi] != NULL) {
+		auto corners = getTriangleCorners(logi);
+		auto weights = getWeights(mouseLocation, corners[0], corners[1], corners[2]);
+		int indexOfClosestCorner = distance(weights.begin(), max_element(weights.begin(), weights.end()));
+		LogicalCoordinates nextNeighborClockwise = getCenter(vector<RealCoordinates>{
+			corners[indexOfClosestCorner],
+				corners[(indexOfClosestCorner + 1) % 3],
+				corners[indexOfClosestCorner] + corners[(indexOfClosestCorner + 1) % 3] - corners[(indexOfClosestCorner + 2) % 3]
+		});
+		LogicalCoordinates prevNeighborClockwise = getCenter(vector<RealCoordinates>{
+			corners[indexOfClosestCorner],
+			corners[(indexOfClosestCorner + 2) % 3],
+			corners[indexOfClosestCorner] + corners[(indexOfClosestCorner + 2) % 3] - corners[(indexOfClosestCorner + 1) % 3]
+		});
+		//(*this)[nextNeighborClockwise] = new Triangle{ SDL_Color{ 0, 0, 255, 255 } };
+		//(*this)[prevNeighborClockwise] = new Triangle{ SDL_Color{ 0, 255, 255, 255 } };
+		if ((*this)[nextNeighborClockwise] != NULL && (*this)[prevNeighborClockwise] != NULL)
+			return false;
+		if ((*this)[nextNeighborClockwise] == NULL && (*this)[prevNeighborClockwise] == NULL)
+			return false;
+
+		bool canRotateClockwise = isEmpty(prevNeighborClockwise);
+		bool canRotateCounterClockwise = isEmpty(nextNeighborClockwise);
+		if (canRotateClockwise && canRotateCounterClockwise) {
+			// rotation direction is ambigous
+			return false;
+		}
+		if (!canRotateClockwise && !canRotateCounterClockwise) {
+			// rotation is blocked
+			return false;
+		}
+
+		LogicalCoordinates oppositeNeighbor = getCenter(vector<RealCoordinates>{
+			corners[(indexOfClosestCorner + 1) % 3],
+				corners[(indexOfClosestCorner + 2) % 3],
+				corners[(indexOfClosestCorner + 1) % 3] + corners[(indexOfClosestCorner + 2) % 3] - corners[indexOfClosestCorner]
+		});
+		list<LogicalCoordinates> originalTriangles;
+		originalTriangles.push_back(logi);
+		if (getSubgraph(logi, oppositeNeighbor, originalTriangles, canRotateClockwise ? nextNeighborClockwise : prevNeighborClockwise)) {
+			//if (render) {
+			//	for (auto triangle : originalTriangles) {
+			//		(*this)[triangle] = new Triangle{ SDL_Color{ 0, 255, 255, 255 } };
+			//	}
+			//	render();
+			//	int x;
+			//	cin >> x;
+			//}
+			list<LogicalCoordinates> trianglesRotated = originalTriangles;
+			if (rotateTriangles(trianglesRotated, corners[indexOfClosestCorner], canRotateClockwise)) {
+				auto it1 = originalTriangles.begin(), it2 = trianglesRotated.begin();
+				while (it1 != originalTriangles.end()) {
+					(*this)[*it2] = (*this)[*it1];
+					(*this)[*it1] = NULL;
+					++it1;
+					++it2;
+				}
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			return false;
 		}
 	}
 }
@@ -65,7 +137,7 @@ void TriangleBoard::rotateOnClick(RealCoordinates mouseLocation) {
 	
 }
 
-bool TriangleBoard::rotateTriangles(list<LogicalCoordinates>& triangles, LogicalCoordinates pivot, bool clockwise) {
+bool TriangleBoard::rotateTriangles(list<LogicalCoordinates>& triangles, const RealCoordinates& pivot, bool clockwise) {
 	for (int i = 0; i < 5; ++i) {
 		for (auto it = triangles.begin(); it != triangles.end(); ++it) {
 			auto triangle = rotate(*it, pivot, clockwise ? 1 : -1);
@@ -75,7 +147,7 @@ bool TriangleBoard::rotateTriangles(list<LogicalCoordinates>& triangles, Logical
 				for (auto it2 = triangles.begin(); it2 != it; ++it2) {
 					*it2 = rotate(*it2, pivot, clockwise ? -1 : 1);
 				}
-				return false;
+				return i != 0;
 			}
 
 		}

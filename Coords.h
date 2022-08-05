@@ -3,6 +3,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <concepts>
 using namespace std;
 
 bool isUpsideDown(int x, int y);
@@ -60,13 +61,22 @@ struct BarycentricCoordinates : public FloatCoordinates<BarycentricCoordinates, 
 
 bool isUpsideDown(LogicalCoordinates logi);
 
+// returns the 3 corners of a Triangle in clockwise order with the top/bottom corner at index 1
 vector<RealCoordinates> getTriangleCorners(const LogicalCoordinates& logi);
 
-RealCoordinates getCenter(vector<RealCoordinates> reals);
+template<class T>
+T getCenter(vector<T> coords) {
+	static_assert(derived_from<T, FloatCoordinates<T, float>> == true);
+	T center{ 0.f, 0.f };
+	for (auto coord : coords) {
+		center = center + coord / float(coords.size());
+	}
+	return center;
+}
 
 RealCoordinates rotate(const RealCoordinates& real, const RealCoordinates& pivot, float angle);
 
-LogicalCoordinates rotate(const LogicalCoordinates& logi, const LogicalCoordinates& pivot, int angle);
+LogicalCoordinates rotate(const LogicalCoordinates& logi, const RealCoordinates& pivot, int angle);
 
 float Dot(const RealCoordinates& a, const RealCoordinates& b);
 

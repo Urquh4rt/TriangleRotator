@@ -220,7 +220,8 @@ int main(int argc, char* args[])
 						case SDL_BUTTON_LEFT:
 						case SDL_BUTTON_RIGHT:
 						{
-							gBoard.simpleRotationAroundSelectedCorner(getRealMousePosition(), e.button.button == SDL_BUTTON_LEFT);
+							//gBoard.simpleRotationAroundSelectedCorner(getRealMousePosition(), e.button.button == SDL_BUTTON_LEFT);
+							gBoard.complexRotationAroundSelectedCorner(getRealMousePosition());
 						}
 						break;
 						case SDL_BUTTON_MIDDLE:

@@ -25,26 +25,18 @@ vector<RealCoordinates> getTriangleCorners(const LogicalCoordinates& logi) {
 		return
 		{
 			BarycentricCoordinates{ bary.x, bary.y },
-			BarycentricCoordinates{ bary.x - 1, bary.y },
 			BarycentricCoordinates{ bary.x, bary.y - 1 },
+			BarycentricCoordinates{ bary.x - 1, bary.y },
 		};
 	}
 	else {
 		return
 		{
 			BarycentricCoordinates{ bary.x, bary.y },
-			BarycentricCoordinates{ bary.x + 1, bary.y },
 			BarycentricCoordinates{ bary.x, bary.y + 1 },
+			BarycentricCoordinates{ bary.x + 1, bary.y },
 		};
 	}
-}
-
-RealCoordinates getCenter(vector<RealCoordinates> reals) {
-	RealCoordinates center{ 0.f, 0.f };
-	for (auto real : reals) {
-		center = center + real / float(reals.size());
-	}
-	return center;
 }
 
 RealCoordinates rotate(const RealCoordinates& real, const RealCoordinates& pivot, float radians) {
@@ -53,8 +45,8 @@ RealCoordinates rotate(const RealCoordinates& real, const RealCoordinates& pivot
 	return RealCoordinates{ coss * relative.x + sinn * relative.y, -sinn * relative.x + coss * relative.y } + pivot;
 }
 
-LogicalCoordinates rotate(const LogicalCoordinates& logi, const LogicalCoordinates& pivot, int angle) {
-	return rotate(getCenter(getTriangleCorners(logi)), RealCoordinates(pivot), angle * M_PI / 3.f);
+LogicalCoordinates rotate(const LogicalCoordinates& logi, const RealCoordinates& pivot, int angle) {
+	return rotate(getCenter(getTriangleCorners(logi)), pivot, angle * M_PI / 3.f);
 }
 
 [[deprecated]]
