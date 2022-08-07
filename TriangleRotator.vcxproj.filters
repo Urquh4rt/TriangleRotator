@@ -30,6 +30,9 @@
     <ClCompile Include="debug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SDL_Interface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Coords.h">
@@ -39,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FileSelector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDL_Interface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

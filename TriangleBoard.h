@@ -1,8 +1,8 @@
 #pragma once
 
 #include <fstream>
-#include <SDL.h>
 #include <functional>
+#include <SDL_pixels.h>
 #include "Coords.h"
 
 using namespace std;

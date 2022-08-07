@@ -23,11 +23,13 @@
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="FileSelector.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="SDL_Interface.cpp" />
     <ClCompile Include="TriangleBoard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Coords.h" />
     <ClInclude Include="FileSelector.h" />
+    <ClInclude Include="SDL_Interface.h" />
     <ClInclude Include="TriangleBoard.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
