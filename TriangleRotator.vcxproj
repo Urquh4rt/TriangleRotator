@@ -93,8 +93,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\VSlibs\SDL2_ttf-2.20.0\include;C:\VSlibs\SDL2-2.0.22\include;C:\VSlibs\SDL2_image-2.6.0\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VSlibs\SDL2-2.0.22\lib\x64;C:\VSlibs\SDL2_ttf-2.20.0\lib\x64;C:\VSlibs\SDL2_image-2.6.0\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VSlibs\SDL2_ttf-2.20.0\include;C:\VSlibs\SDL2-2.0.22\include;C:\VSlibs\SDL2_image-2.6.1\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\VSlibs\SDL2-2.0.22\lib\x64;C:\VSlibs\SDL2_ttf-2.20.0\lib\x64;C:\VSlibs\SDL2_image-2.6.1\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
