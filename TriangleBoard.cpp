@@ -182,7 +182,7 @@ void TriangleBoard::readFromFile() {
 void TriangleBoard::readFromFile(string path) {
 	ifstream file;
 	file.open(path);
-	int w, h;
+	int w = 3, h = 3;
 	file >> w >> h;
 	board = vector<vector<Triangle*>>(w, vector<Triangle*>(h));
 	for (int y = height() - 1; y >= 0; --y) {
